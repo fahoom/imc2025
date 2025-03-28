@@ -121,6 +121,9 @@ logger = Logger()
 
 
 class Trader:
+    def __init__(self):
+        self.thingies = 1
+    
     def run(self, state: TradingState) -> tuple[dict[Symbol, list[Order]], int, str]:
         result = {}
 
@@ -131,7 +134,8 @@ class Trader:
                 # Initialize the list of Orders to be sent as an empty list
                 orders: list[Order] = []
 
-                # Add orders to result
+                # Market Making
+                
                 result[product] = orders
                 
         

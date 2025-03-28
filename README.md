@@ -19,3 +19,8 @@ A sample command to test the tutorial round on data from round 0:
 
 This will produce a file that you can then drag and drop onto [https://jmerle.github.io/imc-prosperity-3-visualizer/].
 Supposedly, adding `--vis` will get it to automatically open the backtest, but this has not worked for me on Safari (Something about cross-origin requests).
+
+### Resource List
+
+- [Stanford Cardinal's Algorithms](https://github.com/ShubhamAnandJain/IMC-Prosperity-2023-Stanford-Cardinal)
+- [Team Linear Utility's Writeup](https://github.com/ericcccsliu/imc-prosperity-2)
