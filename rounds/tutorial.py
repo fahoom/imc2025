@@ -1,7 +1,7 @@
 import json
 from typing import Any
+import numpy as np
 from datamodel import Listing, Observation, Order, OrderDepth, ProsperityEncoder, Symbol, Trade, TradingState
-
 
 class Logger:
     def __init__(self) -> None:
@@ -116,32 +116,92 @@ class Logger:
 
         return value[: max_length - 3] + "..."
 
-
 logger = Logger()
 
+class Product:
+    def __init__(self, limit: int = 0, id: str = "") -> None:
+        # Position limit for the product
+        self.limit = limit
+        # Current position of the product
+        self.position = 0
+        # Product ID for dictionary lookup
+        self.id = id
+
+    def update(self, state: TradingState) -> None:
+        # Update the position based on the state
+        if self.id not in state.position:
+            self.position = 0
+        else:
+            self.position = state.position[self.id]
+        # Placeholder for any other updates needed
+
+    def trade(self, state: TradingState) -> list[Order]:
+        # Placeholder for the trade logic, returns an empty list of orders
+        return []
+    
+class RainforestResin(Product):
+    def __init__(self) -> None:
+        super().__init__(limit=50, id="RAINFOREST_RESIN")
+
+    def trade(self, state: TradingState) -> list[Order]:
+        self.update(state)
+        orders: list[Order] = []
+        order_depth: OrderDepth = state.order_depths[self.id]
+        
+        # Observed fair price of 10,000
+        fair_price = 10000
+        # Alternative method of finding fair price, taking the mean of the highest and lowest sells/buys
+        # fair_price = (max(order_depth.sell_orders.keys()) + min(order_depth.buy_orders.keys())) / 2
+
+        if len(order_depth.sell_orders) != 0:
+            # Select sell order with the lowest price
+            best_ask = min(order_depth.sell_orders.keys())
+            best_ask_volume = -1 * order_depth.sell_orders[best_ask]
+
+            if best_ask < fair_price:
+                quantity = min(best_ask_volume, self.limit - self.position)
+                logger.print(f"Buying {quantity} {self.id} @ {best_ask}")
+                orders.append(Order(self.id, best_ask, quantity))
+            
+        if len(order_depth.buy_orders) != 0:
+            # Select buy order with the highest bid
+            best_bid = max(order_depth.buy_orders.keys())
+            best_bid_volume = order_depth.buy_orders[best_bid]
+
+            if best_bid > fair_price:
+                quantity = min(best_bid_volume, self.limit + self.position)
+                logger.print(f"Selling {quantity} {self.id} @ {best_bid}")
+                orders.append(Order(self.id, best_bid, -quantity))
+        
+        return orders
+
+class Kelp(Product):
+    def __init__(self) -> None:
+        super().__init__(limit=50, id="KELP")
+
+    def trade(self, state: TradingState) -> list[Order]:
+        self.update(state)
+        orders: list[Order] = []
+
+        return orders
+    
 
 class Trader:
-    def __init__(self):
-        self.thingies = 1
-    
+    products = {
+        "RAINFOREST_RESIN": RainforestResin(),
+        "KELP": Kelp(),
+    }
+
     def run(self, state: TradingState) -> tuple[dict[Symbol, list[Order]], int, str]:
         result = {}
-
-        for product in state.order_depths.keys():
-                # Retrieve the Order Depth containing all the market BUY and SELL orders
-                order_depth: OrderDepth = state.order_depths[product]
-
-                # Initialize the list of Orders to be sent as an empty list
-                orders: list[Order] = []
-
-                # Market Making
-                
-                result[product] = orders
-                
         
-        conversions = 0
+        for product in state.order_depths.keys():
+            logger.print(f"Processing product: {product}")
+            if product in self.products:
+                result[product] = self.products[product].trade(state)
+        
+        conversions = 1
         trader_data = ""
-
 
         logger.flush(state, result, conversions, trader_data)
         return result, conversions, trader_data
